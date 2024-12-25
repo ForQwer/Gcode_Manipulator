@@ -1,0 +1,52 @@
+C:\Users\HP\source\repos\Master 2\bin\Debug\Master 2.exe.config
+C:\Users\HP\source\repos\Master 2\bin\Debug\Master 2.exe
+C:\Users\HP\source\repos\Master 2\bin\Debug\Master 2.pdb
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master 2.csproj.AssemblyReference.cache
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master_2.Form1.resources
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master_2.Properties.Resources.resources
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master 2.csproj.GenerateResource.cache
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master 2.csproj.CoreCompileInputs.cache
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master 2.exe
+C:\Users\HP\source\repos\Master 2\obj\Debug\Master 2.pdb
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\arrow_down.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\arrow_keys.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\arrow_up.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_mini.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_mini.svg
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_xy.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_xy.svg
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_z.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_z.svg
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_z_mini.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\control_z_mini.svg
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\edit.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\fit.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\inject.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\reset.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\zoom_in.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Assets\zoom_out.png
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Master 2.exe.config
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Master 2.exe
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Master 2.pdb
+C:\Users\eduar\source\repos\Master 2\bin\Debug\HelixToolkit.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\HelixToolkit.Wpf.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Buffers.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Memory.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Numerics.Vectors.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\eduar\source\repos\Master 2\bin\Debug\HelixToolkit.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\HelixToolkit.Wpf.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\Microsoft.Extensions.Logging.Abstractions.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Buffers.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Memory.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Numerics.Vectors.xml
+C:\Users\eduar\source\repos\Master 2\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.csproj.AssemblyReference.cache
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master_2.Properties.Resources.resources
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.csproj.GenerateResource.cache
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.csproj.CoreCompileInputs.cache
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.csproj.Up2Date
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.exe
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master 2.pdb
+C:\Users\eduar\source\repos\Master 2\obj\Debug\Master_2.GcodeManipulator.resources
