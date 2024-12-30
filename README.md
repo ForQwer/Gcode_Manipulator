@@ -1,4 +1,7 @@
 # GCode Manipulator  
+This is my first public project and my first attempt at working with C#. I would greatly appreciate any feedback or suggestions for improvement!
+
+
 
 This project provides a utility to manipulate GCode files for 3D printing. Its primary use is to adjust the position of a part on the printer bed, with options to apply offsets and set the printer's origin based on its configuration. The tool is especially helpful for printers where homing occurs at maximum X or Y coordinates rather than at (0,0).  
 
@@ -76,7 +79,7 @@ G1 F1800 X67.965 Y110.465 E0.00725
 
 ## Usage  
 
-1. **Prepare your GCode file** by ensuring it includes the required `;MINX`, `;MINY`, `;MAXX`, and `;MAXY` headers.  
+1. **Prepare your GCode file** by ensuring it includes by default the required `;MINX`, `;MINY`, `;MAXX`, and `;MAXY` headers.  
 2. **Configure offsets** and define the printer origin using the provided interface.  
 3. **Specify the starting line** of the actual print using the top-level identifier text input.  
 
