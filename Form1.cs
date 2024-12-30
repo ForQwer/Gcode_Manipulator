@@ -309,6 +309,15 @@ namespace Master_2
         private void btn_Modify_Click(object sender, EventArgs e)
         {
             // Get the directory of the input file
+            try
+            {
+                string directory2 = Path.GetDirectoryName(filePath);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Please select a file first", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             string directory = Path.GetDirectoryName(filePath);
 
