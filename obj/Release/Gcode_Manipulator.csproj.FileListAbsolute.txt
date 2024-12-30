@@ -1,0 +1,25 @@
+C:\Users\eduar\source\repos\Master 2\bin\Release\Master 2.exe.config
+C:\Users\eduar\source\repos\Master 2\bin\Release\Master 2.exe
+C:\Users\eduar\source\repos\Master 2\bin\Release\Master 2.pdb
+C:\Users\eduar\source\repos\Master 2\bin\Release\HelixToolkit.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\HelixToolkit.Wpf.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Buffers.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Memory.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Numerics.Vectors.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\eduar\source\repos\Master 2\bin\Release\HelixToolkit.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\HelixToolkit.Wpf.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\Microsoft.Extensions.Logging.Abstractions.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Buffers.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Memory.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Numerics.Vectors.xml
+C:\Users\eduar\source\repos\Master 2\bin\Release\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Manipulator.csproj.AssemblyReference.cache
+C:\Users\eduar\source\repos\Master 2\obj\Release\Master_2.GcodeManipulator.resources
+C:\Users\eduar\source\repos\Master 2\obj\Release\Master_2.Properties.Resources.resources
+C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Manipulator.csproj.GenerateResource.cache
+C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Manipulator.csproj.CoreCompileInputs.cache
+C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Ma.E8F3E913.Up2Date
+C:\Users\eduar\source\repos\Master 2\obj\Release\Master 2.exe
+C:\Users\eduar\source\repos\Master 2\obj\Release\Master 2.pdb
