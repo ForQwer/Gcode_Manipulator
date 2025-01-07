@@ -1,36 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+//using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace Master_2
 {
     public partial class GcodeManipulator : Form
     {
-        public int bedSizeX = 220;
-        public int bedSizeY = 220;
+        public static int bedSizeX = 220;
+        public static int bedSizeY = 220;
 
-        public bool OriginLeft = true;
-        public bool OriginUp = true;
+        public static bool OriginLeft = true;
+        public static bool OriginUp = true;
 
-        public int offSetXMinus = 0;
-        public int offSetXPlus = 0;
-        public int offSetYMinus = 0;
-        public int offSetYPlus = 0;
+        public static int offSetXMinus = 0;
+        public static int offSetXPlus = 0;
+        public static int offSetYMinus = 0;
+        public static int offSetYPlus = 0;
 
-        public string TopIdentifier = ";LAYER:0";
+        public static string TopIdentifier = ";LAYER:0";
+
+
 
         private float minX = 0, maxX = 0, minY = 0, maxY = 0;
 
         public string filePath = string.Empty;
+
+        public bool PrintLoaded = false;
+
+        // Declare RadioButtons
+        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton radioButton2;
+        private System.Windows.Forms.RadioButton radioButton3;
+        private System.Windows.Forms.RadioButton radioButton4;
 
         public GcodeManipulator()
         {
@@ -38,19 +43,10 @@ namespace Master_2
             Main();
             AttachEventHandlers();
         }
+
         public void Main()
         {
 
-            txt_BedSizeX.Text = bedSizeX.ToString();
-            txt_BedSizeY.Text = bedSizeY.ToString();
-            txt_TopIdentifier.Text = TopIdentifier;
-            chk_OriginLeft.Checked = OriginLeft;
-            chk_OriginUp.Checked = OriginUp;
-
-            txt_OffSetXMinus.Text = offSetXMinus.ToString();
-            txt_OffSetXPlus.Text = offSetXPlus.ToString();
-            txt_OffSetYMinus.Text = offSetYMinus.ToString();
-            txt_OffSetYPlus.Text = offSetYPlus.ToString();
 
             chk_1.Checked = true;
             chk_2.Checked = false;
@@ -62,22 +58,54 @@ namespace Master_2
             chk_8.Checked = false;
             chk_9.Checked = false;
 
-            lbl_OffSetXMinus.BackColor = Color.Red;
-            lbl_OffSetXPlus.BackColor = Color.Green;
-            lbl_OffSetYMinus.BackColor = Color.Orange;
-            lbl_OffSetYPlus.BackColor = Color.Purple;
 
+            
+
+            // Initialize and add RadioButtons to the form
+            InitializeRadioButtons();
         }
 
+        private void InitializeRadioButtons()
+        {
+            // Create RadioButton1
+            radioButton1 = new System.Windows.Forms.RadioButton
+            {
+                Location = new Point(-20, -20),
+                AutoSize = true
+            };
+
+            // Create RadioButton2
+            radioButton2 = new System.Windows.Forms.RadioButton
+            {
+                Location = new Point(-20, -20),
+                AutoSize = true
+            };
+            radioButton3 = new System.Windows.Forms.RadioButton
+            {
+                Location = new Point(-20, -20),
+                AutoSize = true
+            };
+            radioButton4 = new System.Windows.Forms.RadioButton
+            {
+                Location = new Point(-20, -20),
+                AutoSize = true
+            };
+
+            this.Controls.Add(radioButton1);
+            this.Controls.Add(radioButton2);
+            this.Controls.Add(radioButton3);
+            this.Controls.Add(radioButton4);
+
+            radioButton1.BackColor = Color.Brown;
+            radioButton2.BackColor = Color.Brown;
+            radioButton3.BackColor = Color.Brown;
+            radioButton4.BackColor = Color.Brown;
+
+        }
+       
         private void AttachEventHandlers()
         {
-            // Attach KeyPress event handler to all TextBoxes
-            txt_BedSizeX.KeyPress += NumbersOnly_KeyPress;
-            txt_BedSizeY.KeyPress += NumbersOnly_KeyPress;
-            txt_OffSetXMinus.KeyPress += NumbersOnly_KeyPress;
-            txt_OffSetXPlus.KeyPress += NumbersOnly_KeyPress;
-            txt_OffSetYMinus.KeyPress += NumbersOnly_KeyPress;
-            txt_OffSetYPlus.KeyPress += NumbersOnly_KeyPress;
+
 
             chk_1.CheckedChanged += chk_CheckedChanged;
             chk_2.CheckedChanged += chk_CheckedChanged;
@@ -88,6 +116,11 @@ namespace Master_2
             chk_7.CheckedChanged += chk_CheckedChanged;
             chk_8.CheckedChanged += chk_CheckedChanged;
             chk_9.CheckedChanged += chk_CheckedChanged;
+
+            radioButton1.CheckedChanged += RadioButton_CheckedChanged;
+            radioButton2.CheckedChanged += RadioButton_CheckedChanged;
+            radioButton3.CheckedChanged += RadioButton_CheckedChanged;
+            radioButton4.CheckedChanged += RadioButton_CheckedChanged;
 
         }
         private void chk_CheckedChanged(object sender, EventArgs e)
@@ -106,8 +139,25 @@ namespace Master_2
                 chk_9.Checked = chk == chk_9;
             }
         }
-
+        private void RadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is System.Windows.Forms.RadioButton radioButton)
+            {
+                if (radioButton.Checked)
+                {
+                    MessageBox.Show($"{radioButton.Name} is selected!");
+                }
+            }
+        }
         private void btnInputFile_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        
+
+
+        private void OpenGcode_Click_1(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
@@ -168,8 +218,9 @@ namespace Master_2
                             }
                         }
                     }
-                    if (line.StartsWith(txt_TopIdentifier.Text)) { break; }
+                    if (line.StartsWith(TopIdentifier)) { break; }
                 }
+                PrintLoaded = true;
                 DrawArea.Invalidate();
 
             }
@@ -178,36 +229,25 @@ namespace Master_2
                 MessageBox.Show($"Error reading G-code file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private void NumbersOnly_KeyPress(object sender, KeyPressEventArgs e)
+
+        private void optionsToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '-'))
-            {
-                e.Handled = true;
-            }
+            // Create an instance of the Options form
+            Options optionsForm = new Options();
+
+            // Subscribe to the FormClosed event
+            optionsForm.FormClosed += new FormClosedEventHandler(Options_FormClosed);
+
+            // Show the Options form
+            optionsForm.ShowDialog();  // ShowDialog makes the form modal
         }
 
-        private void GcodeManipulator_Load(object sender, EventArgs e)
-        {
 
-        }
-
-        private void txt_TopIdentifier_TextChanged(object sender, EventArgs e)
+        private void Options_FormClosed(object sender, FormClosedEventArgs e)
         {
-            TopIdentifier=txt_TopIdentifier.Text;
-        }
-
-        private void Update(object sender, EventArgs e)
-        {
-            int.TryParse(txt_BedSizeX.Text, out bedSizeX);
-            int.TryParse(txt_BedSizeY.Text, out bedSizeY);
-            OriginLeft = chk_OriginLeft.Checked;
-            OriginUp = chk_OriginUp.Checked;
-            int.TryParse(txt_OffSetXMinus.Text, out offSetXMinus);
-            int.TryParse(txt_OffSetXPlus.Text, out offSetXPlus);
-            int.TryParse(txt_OffSetYMinus.Text, out offSetYMinus);
-            int.TryParse(txt_OffSetYPlus.Text, out offSetYPlus);
             DrawArea.Invalidate();
         }
+
 
         private void DrawArea_Paint(object sender, PaintEventArgs e)
         {
@@ -249,9 +289,41 @@ namespace Master_2
                 g.FillRectangle(greenBrush, bedSizeX + panelOffset - offSetXPlus, panelOffset, offSetXPlus, bedSizeY); // X+ offset
                 g.FillRectangle(orangeBrush, panelOffset, bedSizeY + panelOffset - offSetYMinus, bedSizeX, offSetYMinus); // Y- offset
                 g.FillRectangle(purpleBrush, panelOffset, panelOffset, bedSizeX, offSetYPlus); // Y+ offset
+                if (PrintLoaded == true) 
+                { 
+                    // Draw the bed area
+                    g.FillRectangle(brownBrush, minX + panelOffset, minY + panelOffset, maxX - minX, maxY - minY);
+                    // Add RadioButtons to the form
+      
 
-                // Draw the bed area
-                g.FillRectangle(brownBrush, minX + panelOffset, minY + panelOffset, maxX - minX, maxY - minY);
+                    radioButton1.BringToFront();
+                    radioButton2.BringToFront();
+                    radioButton3.BringToFront();
+                    radioButton4.BringToFront();
+                    // Calculate the position for the radio button
+                    int radioX1 = (int)(minX + panelOffset )*(int)scaleFactor + DrawArea.Location.X+2;
+                    int radioY1 = (int)(minY + panelOffset ) * (int)scaleFactor + DrawArea.Location.Y+2;
+
+                    int radioX2 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2 + ((int)maxX - (int)minX)*2 - 15;
+                    int radioY2 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2;
+
+                    int radioX3 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2 + ((int)maxX - (int)minX) * 2 - 15;
+                    int radioY3 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2 + ((int)maxY - (int)minY) * 2 - 15;
+
+                    int radioX4 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2;
+                    int radioY4 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2 + ((int)maxY - (int)minY) * 2 - 15;
+                    // Set the location of the radio button
+                    radioButton1.Location = new Point(radioX1, radioY1);
+                    radioButton2.Location = new Point(radioX2, radioY2);
+                    radioButton3.Location = new Point(radioX3, radioY3);
+                    radioButton4.Location = new Point(radioX4, radioY4);
+
+
+                }
+
+                
+
+
             }
 
             // Reset transformations to keep the grid and rulers fixed
@@ -290,22 +362,7 @@ namespace Master_2
                     g.DrawString((y - panelOffset).ToString(), rulerFont, Brushes.Black, panelOffset - 20, y -4);
                 }
             }
-            /*
-            // Draw origin labels in the fixed coordinate system
-            Point locationX = OriginLeft
-                ? new Point(0, bedSizeY / 2 + 25)
-                : new Point(bedSizeX + 30, bedSizeY / 2 + 25);
-            g.DrawString("Origin X", new Font("Arial", 5), Brushes.Black, locationX);
-
-            Point locationY = OriginUp
-                ? new Point(bedSizeX / 2 + 10, 20)
-                : new Point(bedSizeX / 2 + 10, bedSizeY + 35);
-            g.DrawString("Origin Y", new Font("Arial", 5), Brushes.Black, locationY);
-            */
         }
-
-
-
         private void btn_Modify_Click(object sender, EventArgs e)
         {
             // Get the directory of the input file
@@ -432,7 +489,6 @@ namespace Master_2
                 // Write the modified lines to the output file
                 File.WriteAllLines(outputFilePath, modifiedLines);
             }
-
             private static string ModifyCoordinates(string line, float xOffset, float yOffset)
             {
                 if (line.StartsWith(";MINX:") || line.StartsWith(";MAXX:"))
