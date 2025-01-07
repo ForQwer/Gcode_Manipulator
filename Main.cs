@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.IO.Ports;
+
 //using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace Master_2
@@ -23,19 +25,19 @@ namespace Master_2
 
         public static string TopIdentifier = ";LAYER:0";
 
-
-
         private float minX = 0, maxX = 0, minY = 0, maxY = 0;
 
         public string filePath = string.Empty;
 
         public bool PrintLoaded = false;
 
-        // Declare RadioButtons
         private System.Windows.Forms.RadioButton radioButton1;
         private System.Windows.Forms.RadioButton radioButton2;
         private System.Windows.Forms.RadioButton radioButton3;
         private System.Windows.Forms.RadioButton radioButton4;
+
+        SerialPort serialPort = new SerialPort();
+
 
         public GcodeManipulator()
         {
