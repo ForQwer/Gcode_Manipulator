@@ -23,3 +23,4 @@ C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Manipulator.csproj.CoreCo
 C:\Users\eduar\source\repos\Master 2\obj\Release\Gcode_Ma.E8F3E913.Up2Date
 C:\Users\eduar\source\repos\Master 2\obj\Release\Master 2.exe
 C:\Users\eduar\source\repos\Master 2\obj\Release\Master 2.pdb
+C:\Users\eduar\source\repos\Master 2\obj\Release\Master_2.Options.resources

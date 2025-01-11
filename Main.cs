@@ -5,13 +5,20 @@ using System.Windows.Forms;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.IO.Ports;
-
-//using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
+using System.Xml;
+using System.Linq;
+using System.Drawing.Text;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Master_2.Properties;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
+using System.Text.RegularExpressions;
 
 namespace Master_2
 {
     public partial class GcodeManipulator : Form
     {
+        // this.button14.Image= new Bitmap(global::Master_2.Properties.Resources.up_left_arrow, button1.Size);
+        //////////////////////////////////////////// PRINTER SETTINGS
         public static int bedSizeX = 220;
         public static int bedSizeY = 220;
 
@@ -24,19 +31,26 @@ namespace Master_2
         public static int offSetYPlus = 0;
 
         public static string TopIdentifier = ";LAYER:0";
+        //////////////////////////////////////////// GENERAL VARIABILES
+        private float minX = 0, maxX = 0, minY = 0, maxY = 0, posZ = 0, posX = 0, posY = 0;
 
-        private float minX = 0, maxX = 0, minY = 0, maxY = 0;
+
 
         public string filePath = string.Empty;
 
         public bool PrintLoaded = false;
 
-        private System.Windows.Forms.RadioButton radioButton1;
-        private System.Windows.Forms.RadioButton radioButton2;
-        private System.Windows.Forms.RadioButton radioButton3;
-        private System.Windows.Forms.RadioButton radioButton4;
+        public bool PrinterConnected = false;
 
-        SerialPort serialPort = new SerialPort();
+        public bool PrinterHomed = false;
+
+        public string[] printerPreCommands = new string[3];
+
+        public List<string> printerExecutedCommands = new List<string>();
+
+        private int currentCommandIndex = -1; 
+
+
 
 
         public GcodeManipulator()
@@ -44,12 +58,12 @@ namespace Master_2
             InitializeComponent();
             Main();
             AttachEventHandlers();
+            PrinterInterface.DataReceived += OnDataReceived;
         }
-
+        //////////////////////////////////////////// INITIALIZATION
+        #region 
         public void Main()
         {
-
-
             chk_1.Checked = true;
             chk_2.Checked = false;
             chk_3.Checked = false;
@@ -59,56 +73,30 @@ namespace Master_2
             chk_7.Checked = false;
             chk_8.Checked = false;
             chk_9.Checked = false;
+            //////////////////////////////////////////// UI
+            button2.Image.RotateFlip(RotateFlipType.RotateNoneFlipX); 
+            button3.Image.RotateFlip(RotateFlipType.RotateNoneFlipY); 
+            button4.Image.RotateFlip(RotateFlipType.RotateNoneFlipXY);
+            button13.Image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+
+            button29.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+            button33.Image.RotateFlip(RotateFlipType.RotateNoneFlipXY);
+            button22.Image.RotateFlip(RotateFlipType.Rotate270FlipNone);
 
 
-            
 
-            // Initialize and add RadioButtons to the form
-            InitializeRadioButtons();
+
+            cmb_COM.Items.Add("COM3");
+            cmb_BAUD.Items.Add(250000);
+
+            cmb_COM.SelectedIndex = 0;
+            cmb_BAUD.SelectedIndex = 0;
+
+            printerPreCommands[0] = "G28"; // Home all axes
+            printerPreCommands[1] = "M104 S200"; // Set extruder temperature to 200°C
         }
-
-        private void InitializeRadioButtons()
-        {
-            // Create RadioButton1
-            radioButton1 = new System.Windows.Forms.RadioButton
-            {
-                Location = new Point(-20, -20),
-                AutoSize = true
-            };
-
-            // Create RadioButton2
-            radioButton2 = new System.Windows.Forms.RadioButton
-            {
-                Location = new Point(-20, -20),
-                AutoSize = true
-            };
-            radioButton3 = new System.Windows.Forms.RadioButton
-            {
-                Location = new Point(-20, -20),
-                AutoSize = true
-            };
-            radioButton4 = new System.Windows.Forms.RadioButton
-            {
-                Location = new Point(-20, -20),
-                AutoSize = true
-            };
-
-            this.Controls.Add(radioButton1);
-            this.Controls.Add(radioButton2);
-            this.Controls.Add(radioButton3);
-            this.Controls.Add(radioButton4);
-
-            radioButton1.BackColor = Color.Brown;
-            radioButton2.BackColor = Color.Brown;
-            radioButton3.BackColor = Color.Brown;
-            radioButton4.BackColor = Color.Brown;
-
-        }
-       
         private void AttachEventHandlers()
         {
-
-
             chk_1.CheckedChanged += chk_CheckedChanged;
             chk_2.CheckedChanged += chk_CheckedChanged;
             chk_3.CheckedChanged += chk_CheckedChanged;
@@ -119,12 +107,10 @@ namespace Master_2
             chk_8.CheckedChanged += chk_CheckedChanged;
             chk_9.CheckedChanged += chk_CheckedChanged;
 
-            radioButton1.CheckedChanged += RadioButton_CheckedChanged;
-            radioButton2.CheckedChanged += RadioButton_CheckedChanged;
-            radioButton3.CheckedChanged += RadioButton_CheckedChanged;
-            radioButton4.CheckedChanged += RadioButton_CheckedChanged;
-
         }
+        #endregion
+        //////////////////////////////////////////// GENERAL EVENTS IN FORMS
+        #region 
         private void chk_CheckedChanged(object sender, EventArgs e)
         {
             // Ensure only one checkbox is checked
@@ -141,25 +127,66 @@ namespace Master_2
                 chk_9.Checked = chk == chk_9;
             }
         }
-        private void RadioButton_CheckedChanged(object sender, EventArgs e)
+
+        private void Options_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (sender is System.Windows.Forms.RadioButton radioButton)
+            DrawArea.Invalidate();
+        }
+        private void txt_Command_KeyDown(object sender, KeyEventArgs e)
+        {
+            this.KeyPreview = true; // Set in Form's constructor or Load event
+
+            if (e.KeyCode == Keys.Enter && txt_Command.Text != "")
             {
-                if (radioButton.Checked)
+                // Action to perform when Enter is pressed
+                string command = txt_Command.Text.ToUpper();
+
+                PrinterInterface.SendCommand(command);  // Sending the command to the printer interface
+
+                // Display the command in the text box
+                txtCommandShow.AppendText(command + Environment.NewLine);
+
+                // Add the command to the list of executed commands
+                printerExecutedCommands.Add(command);
+
+                // Reset the command textbox
+                txt_Command.Text = "";
+
+                // Reset the currentCommandIndex to the last added command
+                currentCommandIndex = printerExecutedCommands.Count - 1;
+
+                e.Handled = true; // Prevent further processing if necessary
+                                  // e.SuppressKeyPress = true; // Prevents the ding sound
+            }
+
+            // Navigate through previous commands using the Up arrow key
+            if (e.KeyCode == Keys.Up)
+            {
+                if (currentCommandIndex >= 0) // Ensure we don't go out of bounds
                 {
-                    MessageBox.Show($"{radioButton.Name} is selected!");
+              
+                    txt_Command.Text = printerExecutedCommands[currentCommandIndex];
+                    if (printerExecutedCommands[currentCommandIndex] != "")
+                    {
+                        currentCommandIndex--;
+                    }
+                }
+            }
+
+            // Navigate through next commands using the Down arrow key
+            else if (e.KeyCode == Keys.Down)
+            {
+                if (currentCommandIndex < printerExecutedCommands.Count - 1) // Ensure we don't go out of bounds
+                {
+                    currentCommandIndex++;
+                    txt_Command.Text = printerExecutedCommands[currentCommandIndex];
                 }
             }
         }
-        private void btnInputFile_Click(object sender, EventArgs e)
-        {
-            
-        }
-
-        
-
-
-        private void OpenGcode_Click_1(object sender, EventArgs e)
+        #endregion
+        /////////////////////////////////////////// CLICKS
+        #region 
+        private void btnOpernGcode_Click(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
@@ -172,6 +199,383 @@ namespace Master_2
                 ReadGCodeFile(filePath);
             }
         }
+
+        private void btn_DisconnectPrinter_Click(object sender, EventArgs e)
+        {
+            PrinterInterface.DisconnectPrinter();
+            PrinterConnected = false;
+        }
+
+        private void btnOptions_Click(object sender, EventArgs e)
+        {
+            // Create an instance of the Options form
+            Options optionsForm = new Options();
+
+            // Subscribe to the FormClosed event
+            optionsForm.FormClosed += new FormClosedEventHandler(Options_FormClosed);
+
+            // Show the Options form
+            optionsForm.ShowDialog();  // ShowDialog makes the form modal
+        }
+
+        private void btn_ConnectToPrinter_Clicked(object sender, EventArgs e)
+        {
+            if (cmb_COM.Text != "" && cmb_BAUD.Text != "")
+            {
+                PrinterInterface.ConnectToPrinter(cmb_COM.Text, int.Parse(cmb_BAUD.Text));
+                PrinterInterface.SendCommand("M114");
+                PrinterConnected = true;
+            }
+
+
+        }
+        
+        private void btn_Modify_Click(object sender, EventArgs e)
+        {
+            // Get the directory of the input file
+            try
+            {
+                string directory2 = Path.GetDirectoryName(filePath);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Please select a file first", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string directory = Path.GetDirectoryName(filePath);
+
+            // Get the file name without the extension
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+
+            // Get the file extension
+            string fileExtension = Path.GetExtension(filePath);
+
+            // Create the output file name by appending "_modified" to the Original file name
+            string outputFileName = fileNameWithoutExtension + fileExtension;
+
+            // Combine the directory path with the new output file name
+            string outputFilePath = Path.Combine(directory, outputFileName);
+
+            // Call the method to process the G-code file and modify it
+            float offsetX = -minX + offSetXMinus;
+            float offsetY = -minY + offSetYPlus;
+            float halfBedSizeX = bedSizeX / 2;
+            float halfBedSizeY = bedSizeY / 2;
+            float midX = (minX + maxX) / 2;
+            float midY = (minY + maxY) / 2;
+            if (OriginLeft && !OriginUp)
+            {
+                switch (true)
+                {
+
+                    case var _ when chk_7.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_8.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_9.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_4.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_5.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_6.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_1.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_2.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_3.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            else if (!OriginLeft && OriginUp)
+            {
+                switch (true)
+                {
+
+                    case var _ when chk_3.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_2.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_1.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_6.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_5.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_4.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_9.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_8.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_7.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            else if (!OriginLeft && !OriginUp)
+            {
+                switch (true)
+                {
+
+                    case var _ when chk_9.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_8.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_7.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_6.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_5.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_4.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_3.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_2.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_1.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            else
+            {
+                switch (true)
+                {
+
+                    case var _ when chk_1.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_2.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_3.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, -offsetY, TopIdentifier);
+                        break;
+                    case var _ when chk_4.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_5.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_6.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, (halfBedSizeY) - midY, TopIdentifier);
+                        break;
+                    case var _ when chk_7.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, offsetX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_8.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (halfBedSizeX) - midX, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    case var _ when chk_9.Checked:
+                        GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            
+            ReadGCodeFile(filePath);
+
+
+        }
+
+        private void MoveToCorner(object sender, EventArgs e)
+        {
+            string MoveCommand = "";
+            if (sender is System.Windows.Forms.Button button)
+            {
+                if (PrinterConnected && PrintLoaded && PrinterHomed)
+                {
+                    if (OriginLeft && !OriginUp)
+                    {
+                        switch (button.Name)
+                        {
+                            case "button1":
+                                MoveCommand = $"G1 X{minX} Y{maxY} F5000.0";
+                                break;
+
+                            case "button2":
+                                MoveCommand = $"G1 X{maxX} Y{maxY} F5000.0";
+                                break;
+                            case "button4":
+                                MoveCommand = $"G1 X{maxX} Y{minY} F5000.0";
+                                break;
+                            case "button3":
+                                MoveCommand = $"G1 X{minX} Y{minY} F5000.0";
+                                break;
+
+                        }
+                    }
+                    else if (!OriginLeft && OriginUp)
+                    {
+                        switch (button.Name)
+                        {
+                            case "button1":
+                                MoveCommand = $"G1 X{maxX} Y{maxY} F5000.0";
+                                break;
+
+                            case "button2":
+                                MoveCommand = $"G1 X{minX} Y{maxY} F5000.0";
+                                break;
+                            case "button4":
+                                MoveCommand = $"G1 X{minX} Y{minY} F5000.0";
+                                break;
+                            case "button3":
+                                MoveCommand = $"G1 X{maxY} Y{minY} F5000.0";
+                                break;
+
+                        }
+                    }
+                    else if (!OriginLeft && !OriginUp)
+                    {
+                        switch (button.Name)
+                        {
+                            case "button1":
+                                MoveCommand = $"G1 X{maxY} Y{maxY} F5000.0";
+                                break;
+
+                            case "button2":
+                                MoveCommand = $"G1 X{minX} Y{maxY} F5000.0";
+                                break;
+                            case "button4":
+                                MoveCommand = $"G1 X{minX} Y{minY} F5000.0";
+                                break;
+                            case "button3":
+                                MoveCommand = $"G1 X{maxY} Y{minY} F5000.0";
+                                break;
+
+                        }
+                    }
+                    else
+                    {
+                        switch (button.Name)
+                        {
+                            case "button1":
+                                MoveCommand = $"G1 X{minX} Y{minY} F5000.0";
+                                break;
+
+                            case "button2":
+                                MoveCommand = $"G1 X{maxX} Y{minY} F5000.0";
+                                break;
+                            case "button3":
+                                MoveCommand = $"G1 X{maxX} Y{maxY} F5000.0";
+                                break;
+                            case "button4":
+                                MoveCommand = $"G1 X{minX} Y{maxY} F5000.0";
+                                break;
+
+                        }
+                    }
+
+                    PrinterInterface.SendCommand(MoveCommand);
+                    txtCommandShow.AppendText(MoveCommand + Environment.NewLine);
+                }
+                else if (PrinterConnected == false) { txtCommandShow.AppendText("Not Connected" + Environment.NewLine); }
+                else { MessageBox.Show("Printer not homed"); }
+            }
+            
+        }
+
+        private void MoveAxis(object sender, EventArgs e)
+        {
+
+            if (sender is System.Windows.Forms.Button button)
+            {
+                if (PrinterHomed == true)
+                {
+                    if (button.Name == "button6" || button.Name == "button7" || button.Name == "button8")
+                    {
+                        posZ = posZ - float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 Z{posZ} F5000.0");
+                    }
+                    if (button.Name == "button10" || button.Name == "button11" || button.Name == "button12")
+                    {
+                        posZ = posZ + float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 Z{posZ} F5000.0");
+                    }
+                    if (button.Name == "button19" || button.Name == "button20" || button.Name == "button21")
+                    {
+                        posY = posY + float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 Y{posY} F5000.0");
+                    }
+                    if (button.Name == "button27" || button.Name == "button26" || button.Name == "button28")
+                    {
+                        posX = posX + float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 X{posX} F5000.0");
+                    }
+                    if (button.Name == "button32" || button.Name == "button31" || button.Name == "button30")
+                    {
+                        posY = posY - float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 Y{posY} F5000.0");
+                    }
+                    if (button.Name == "button23" || button.Name == "button24" || button.Name == "button25")
+                    {
+                        posX = posX - float.Parse(button.Text);
+                        PrinterInterface.SendCommand($"G1 X{posX} F5000.0");
+                    }
+                }
+                else { MessageBox.Show("Printer not homed"); }
+            }
+        }
+
+        private void HomeAxis(object sender, EventArgs e)
+        {
+            if (sender is System.Windows.Forms.Button button)
+            {
+
+                    if (button.Name == "button14" || button.Name == "button15" || button.Name == "button16")
+                    {
+                        PrinterInterface.SendCommand(printerPreCommands[0] + " " + button.Text);
+                    }
+                    else
+                    {
+                        PrinterInterface.SendCommand(printerPreCommands[0]);
+                        PrinterHomed = true;
+                    }
+                
+            }
+
+        }
+        //////////////////////////////////////////// METHODS
         private void ReadGCodeFile(string filePath)
         {
             // Initialize minX, maxX, minY, maxY to extreme values
@@ -231,36 +635,115 @@ namespace Master_2
                 MessageBox.Show($"Error reading G-code file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        private void optionsToolStripMenuItem_Click_1(object sender, EventArgs e)
+        public static float ExtractValue(string input, string label)
         {
-            // Create an instance of the Options form
-            Options optionsForm = new Options();
+            // Find the index of the label (e.g., "X:")
+            int labelIndex = input.IndexOf(label);
+            if (labelIndex == -1)
+                return 0.0f; // Return 0 if label is not found
 
-            // Subscribe to the FormClosed event
-            optionsForm.FormClosed += new FormClosedEventHandler(Options_FormClosed);
+            // Find the starting index of the value (after the label)
+            int startIndex = labelIndex + label.Length;
 
-            // Show the Options form
-            optionsForm.ShowDialog();  // ShowDialog makes the form modal
+            // Find the index of the next space after the value
+            int endIndex = input.IndexOf(" ", startIndex);
+
+            // If no space is found, take the value until the end of the string
+            if (endIndex == -1)
+            {
+                endIndex = input.Length;
+            }
+
+            // Extract the substring and convert it to a float
+            string valueStr = input.Substring(startIndex, endIndex - startIndex);
+            return float.Parse(valueStr);
         }
-
-
-        private void Options_FormClosed(object sender, FormClosedEventArgs e)
+        #endregion
+        //////////////////////////////////////////// EVENTS
+        #region 
+        private void OnDataReceived(string data)
         {
-            DrawArea.Invalidate();
+            bool X = true, Y = true, Z = true;
+            // Regex pattern to extract X, Y, Z values
+            string pattern = @"X:([0-9.]+)\s*Y:([0-9.]+)\s*Z:([0-9.]+)";
+
+       
+            // Ensure thread-safe UI update
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() =>
+                {
+                    if (!(data.StartsWith("echo") || data.StartsWith("ok")))
+
+                    {
+                        txtCommandShow.AppendText(data + Environment.NewLine);
+                        // Apply regex to the data string
+                        Match match = Regex.Match(data, pattern);
+                        if (match.Success)
+                        {
+                            // Extract the values from the matched groups
+                            posX = float.Parse(match.Groups[1].Value);
+                            posY = float.Parse(match.Groups[2].Value);
+                            posZ = float.Parse(match.Groups[3].Value);
+
+                        }
+                        match = Regex.Match(data, @"[A-Za-z]+1234567890");
+                    }
+
+                    
+                }));
+            }
+            else
+            {
+                if (!(data.StartsWith("echo") || data.StartsWith("ok")))
+
+                {
+                    txtCommandShow.AppendText(data + Environment.NewLine);
+                    if (data.Contains("X:") && data.Contains("Y:") && data.Contains("Z:"))
+                    {
+
+                        string firstLine = data.Split('\n')[0];
+
+                        // Split the first line into parts
+                        string[] parts = firstLine.Split(' ');
+
+                        // Parse X, Y, and Z values
+                        foreach (var part in parts)
+                        {
+                            if (part.StartsWith("X:") && X == true)
+                            {
+                                posX = float.Parse(part.Substring(2)); // Extract value after "X:"
+                                X = false;
+                            }
+                            else if (part.StartsWith("Y:") && Y == true)
+                            {
+                                posX = float.Parse(part.Substring(2)); // Extract value after "Y:"
+                                Y = false;
+                            }
+                            else if (part.StartsWith("Z:") && Z == true)
+                            {
+                                posZ = float.Parse(part.Substring(2)); // Extract value after "Z:"
+                                Z = false;
+                            }
+
+
+                        }
+
+                    }
+                }
+            }
         }
-
-
         private void DrawArea_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
             int panelOffset = 30;
-            float scaleFactor = 2f;
+            int scaleFactor = 2;
             g.ScaleTransform(scaleFactor, scaleFactor);
 
+
             // Adjust the panel size dynamically
-            DrawArea.Width = (bedSizeX + 2 * panelOffset)*2;
-            DrawArea.Height = (bedSizeY + 2 * panelOffset)*2;
+            DrawArea.Width = (bedSizeX + 2 * panelOffset) * 2;
+            DrawArea.Height = (bedSizeY + 2 * panelOffset) * 2;
 
             // Apply transformations for origin movement
             if (OriginLeft && !OriginUp)
@@ -291,40 +774,12 @@ namespace Master_2
                 g.FillRectangle(greenBrush, bedSizeX + panelOffset - offSetXPlus, panelOffset, offSetXPlus, bedSizeY); // X+ offset
                 g.FillRectangle(orangeBrush, panelOffset, bedSizeY + panelOffset - offSetYMinus, bedSizeX, offSetYMinus); // Y- offset
                 g.FillRectangle(purpleBrush, panelOffset, panelOffset, bedSizeX, offSetYPlus); // Y+ offset
-                if (PrintLoaded == true) 
-                { 
-                    // Draw the bed area
-                    g.FillRectangle(brownBrush, minX + panelOffset, minY + panelOffset, maxX - minX, maxY - minY);
-                    // Add RadioButtons to the form
-      
+                if (PrintLoaded == true)
+                {
 
-                    radioButton1.BringToFront();
-                    radioButton2.BringToFront();
-                    radioButton3.BringToFront();
-                    radioButton4.BringToFront();
-                    // Calculate the position for the radio button
-                    int radioX1 = (int)(minX + panelOffset )*(int)scaleFactor + DrawArea.Location.X+2;
-                    int radioY1 = (int)(minY + panelOffset ) * (int)scaleFactor + DrawArea.Location.Y+2;
-
-                    int radioX2 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2 + ((int)maxX - (int)minX)*2 - 15;
-                    int radioY2 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2;
-
-                    int radioX3 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2 + ((int)maxX - (int)minX) * 2 - 15;
-                    int radioY3 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2 + ((int)maxY - (int)minY) * 2 - 15;
-
-                    int radioX4 = (int)(minX + panelOffset) * (int)scaleFactor + DrawArea.Location.X + 2;
-                    int radioY4 = (int)(minY + panelOffset) * (int)scaleFactor + DrawArea.Location.Y + 2 + ((int)maxY - (int)minY) * 2 - 15;
-                    // Set the location of the radio button
-                    radioButton1.Location = new Point(radioX1, radioY1);
-                    radioButton2.Location = new Point(radioX2, radioY2);
-                    radioButton3.Location = new Point(radioX3, radioY3);
-                    radioButton4.Location = new Point(radioX4, radioY4);
-
+                g.FillRectangle(brownBrush, minX + panelOffset, minY + panelOffset, maxX - minX, maxY - minY);
 
                 }
-
-                
-
 
             }
 
@@ -361,187 +816,13 @@ namespace Master_2
                 for (int y = panelOffset; y <= bedSizeY + panelOffset; y += gridSpacing)
                 {
                     g.DrawLine(rulerPen, panelOffset - 5, y, panelOffset, y);
-                    g.DrawString((y - panelOffset).ToString(), rulerFont, Brushes.Black, panelOffset - 20, y -4);
+                    g.DrawString((y - panelOffset).ToString(), rulerFont, Brushes.Black, panelOffset - 20, y - 4);
                 }
             }
         }
-        private void btn_Modify_Click(object sender, EventArgs e)
-        {
-            // Get the directory of the input file
-            try
-            {
-                string directory2 = Path.GetDirectoryName(filePath);
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("Please select a file first", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        #endregion
 
-            string directory = Path.GetDirectoryName(filePath);
-
-            // Get the file name without the extension
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-
-            // Get the file extension
-            string fileExtension = Path.GetExtension(filePath);
-
-            // Create the output file name by appending "_modified" to the Original file name
-            string outputFileName = fileNameWithoutExtension + fileExtension;
-
-            // Combine the directory path with the new output file name
-            string outputFilePath = Path.Combine(directory, outputFileName);
-
-            // Call the method to process the G-code file and modify it
-            switch (true)
-            {
-                case var _ when chk_1.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, -minX + offSetXMinus, -minY + offSetYPlus,TopIdentifier);
-                    Console.WriteLine("Checkbox 1 is selected.");
-                    break;
-                case var _ when chk_2.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (bedSizeX / 2) - (minX + maxX) / 2, -minY + offSetYPlus, TopIdentifier);
-                    Console.WriteLine("Checkbox 2 is selected.");
-                    break;
-                case var _ when chk_3.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, -minY + offSetYPlus, TopIdentifier);
-                    Console.WriteLine("Checkbox 3 is selected.");
-                    break;
-                case var _ when chk_4.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, -minX + offSetXMinus, (bedSizeY / 2) - (minY + maxY) / 2, TopIdentifier);
-                    Console.WriteLine("Checkbox 4 is selected.");
-                    break;
-                case var _ when chk_5.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (bedSizeX / 2) - (minX + maxX) / 2, (bedSizeY / 2) - (minY + maxY) / 2, TopIdentifier);
-                    Console.WriteLine("Checkbox 5 is selected.");
-                    break;
-                case var _ when chk_6.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, (bedSizeY / 2) - (minY + maxY) / 2, TopIdentifier);
-                    Console.WriteLine("Checkbox 6 is selected.");
-                    break;
-                case var _ when chk_7.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, -minX + offSetXMinus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
-                    Console.WriteLine("Checkbox 7 is selected.");
-                    break;
-                case var _ when chk_8.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, (bedSizeX / 2) - (minX + maxX) / 2, bedSizeY - maxY - offSetXMinus, TopIdentifier);
-                    Console.WriteLine("Checkbox 8 is selected.");
-                    break;
-                case var _ when chk_9.Checked:
-                    GCodeModifyer.ProcessGCodeFile(filePath, outputFilePath, bedSizeX - maxX - offSetXPlus, bedSizeY - maxY - offSetXMinus, TopIdentifier);
-                    Console.WriteLine("Checkbox 9 is selected.");
-                    break;
-                default:
-                    Console.WriteLine("No checkbox is selected.");
-                    break;
-            }
-            ReadGCodeFile(filePath);
-
-
-        }
     }
-        public static class GCodeModifyer
-        {
-            public static void ProcessGCodeFile(string filePath, string outputFilePath, float xOffset, float yOffset, string TopIdentifier)
-            {
-                bool startProcessing = false;
-                // Read all lines from the input G-code file
-                var lines = File.ReadAllLines(filePath);
 
-                // Create a list to store modified lines
-                var modifiedLines = new List<string>();
 
-                // Process each line in the G-code
-                foreach (var line in lines)
-                {
-                    if (line.StartsWith(TopIdentifier))
-                    {
-                        startProcessing = true;
-                    }
-
-                    if (line.StartsWith("G91"))
-                    {
-                        startProcessing = false;
-                    }
-
-                    // If the line starts with G0 or G1 (indicating a move)
-                    if ((line.StartsWith("G0") || line.StartsWith("G1")) && startProcessing == true)
-                    {
-                        // Modify X and Y values if present
-                        string modifiedLine = ModifyCoordinates(line, xOffset, yOffset);
-                        modifiedLines.Add(modifiedLine);
-
-                    }
-                    else
-                    {
-                        if (line.StartsWith(";MINX:") || line.StartsWith(";MINY:") || line.StartsWith(";MAXX:") || line.StartsWith(";MAXY:"))
-                        {
-                            string modifiedLine = ModifyCoordinates(line, xOffset, yOffset);
-                            modifiedLines.Add(modifiedLine);
-                        }
-                        else
-                        {
-                            modifiedLines.Add(line);
-                        }
-
-                    }
-
-                }
-
-                // Write the modified lines to the output file
-                File.WriteAllLines(outputFilePath, modifiedLines);
-            }
-            private static string ModifyCoordinates(string line, float xOffset, float yOffset)
-            {
-                if (line.StartsWith(";MINX:") || line.StartsWith(";MAXX:"))
-                {
-                    int xStartIndex = line.IndexOf(":") + 1;
-                    int xEndIndex = line.IndexOf(" ", xStartIndex);
-                    if (xEndIndex == -1) xEndIndex = line.Length; // If no space, take till end of string
-
-                    string xValue = line.Substring(xStartIndex, xEndIndex - xStartIndex);
-                    double newX = double.Parse(xValue) + xOffset; // Add the X offset
-                    line = line.Replace($":{xValue}", $":{newX:F3}"); // Replace with new X value
-
-                }
-                if (line.StartsWith(";MINY:") || line.StartsWith(";MAXY:"))
-                {
-                    int yStartIndex = line.IndexOf(":") + 1;
-                    int yEndIndex = line.IndexOf(" ", yStartIndex);
-                    if (yEndIndex == -1) yEndIndex = line.Length; // If no space, take till end of string
-
-                    string yValue = line.Substring(yStartIndex, yEndIndex - yStartIndex);
-                    double newY = double.Parse(yValue) + yOffset; // Add the X offset
-                    line = line.Replace($":{yValue}", $":{newY:F3}"); // Replace with new X value
-
-                }
-
-                // Modify X coordinate
-                if (line.Contains("X") && (!(line.Contains("MIN")) && !(line.Contains("MAX"))))
-                {
-                    int xStartIndex = line.IndexOf("X") + 1;
-                    int xEndIndex = line.IndexOf(" ", xStartIndex);
-                    if (xEndIndex == -1) xEndIndex = line.Length; // If no space, take till end of string
-
-                    string xValue = line.Substring(xStartIndex, xEndIndex - xStartIndex);
-                    double newX = double.Parse(xValue) + xOffset; // Add the X offset
-                    line = line.Replace($"X{xValue}", $"X{newX:F3}"); // Replace with new X value
-                }
-
-                // Modify Y coordinate
-                if (line.Contains("Y") && (!(line.Contains("MIN")) && !(line.Contains("MAX"))))
-                {
-                    int yStartIndex = line.IndexOf("Y") + 1;
-                    int yEndIndex = line.IndexOf(" ", yStartIndex);
-                    if (yEndIndex == -1) yEndIndex = line.Length; // If no space, take till end of string
-
-                    string yValue = line.Substring(yStartIndex, yEndIndex - yStartIndex);
-                    double newY = double.Parse(yValue) + yOffset; // Add the Y offset
-                    line = line.Replace($"Y{yValue}", $"Y{newY:F3}"); // Replace with new Y value
-                }
-
-                return line;
-            }
-        }
-      
 }
